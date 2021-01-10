@@ -1,3 +1,4 @@
+## Introduction
 This repo is a part of Term Project of class ME491 Learning-based Control at KAIST taught by professor Jemin Hwangbo.
 
 The goal of this project is to design the reward function in raisim simulation so that (4-leg robot) Anymal learn to climb up the cylinder as high as possible.
@@ -10,7 +11,9 @@ The main idea is to use curriculumn learning with many parts of reward function 
 The details could be found in the report directory.
 
 ## Result
-![Test](https://youtu.be/oV66VFc71TQ)
+The robot could climb up 1.25491 meters (rank 7th / 38).
+
+[![Learning Iteration](https://github.com/surfii3z/ME491TermProject/blob/master/img/test.PNG)](https://youtu.be/oV66VFc71TQ)
 
 ## raisim_env_anymal
 
