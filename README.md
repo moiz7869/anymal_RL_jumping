@@ -13,7 +13,7 @@ The details could be found in the report directory.
 ## Result
 The robot could climb up 1.25491 meters (rank 7th / 38).
 
-[![Learning Iteration](https://github.com/surfii3z/ME491TermProject/blob/master/img/test.PNG)](https://youtu.be/oV66VFc71TQ)
+[Learning Iteration Video](https://youtu.be/oV66VFc71TQ)
 
 ## raisim_env_anymal
 
