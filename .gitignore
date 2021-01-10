@@ -14,3 +14,4 @@ cmake-*/*
 id_rsa
 raisimGymTorch/env/bin/*
 activation.raisim
+data/

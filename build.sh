@@ -1,0 +1,1 @@
+python3 setup.py develop --user --Debug --CMAKE_PREFIX_PATH "$LOCAL_INSTALL"

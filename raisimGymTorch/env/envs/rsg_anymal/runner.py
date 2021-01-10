@@ -50,14 +50,14 @@ avg_dones = []
 fig, ax = plt.subplots(1, 2, constrained_layout=True, sharex=True, figsize=[10.8, 4.8])
 
 actor = ppo_module.Actor(ppo_module.MLP(cfg['architecture']['policy_net'],
-                                        nn.LeakyReLU,
+                                        nn.Tanh,
                                         ob_dim,
                                         act_dim),
                          ppo_module.MultivariateGaussianDiagonalCovariance(act_dim, 1.0),
                          'cuda')
 
 critic = ppo_module.Critic(ppo_module.MLP(cfg['architecture']['value_net'],
-                                          nn.LeakyReLU,
+                                          nn.Tanh,
                                           ob_dim,
                                           1),
                            'cuda')
@@ -165,8 +165,8 @@ if not test_mode:
 if test_mode:
     curriculum_setting = True
 # you need to change save directory which you want to test
-    save_dir = os.environ['WORKSPACE'] + "/ME491TermProject/data/2020-11-02-10-32-28"
-    test_policy = 0
+    save_dir = os.environ['WORKSPACE'] + "/ME491TermProject/data/2020-11-18-23-09-41"
+    test_policy = 3400
     env.turn_on_visualization()
     env.start_video_recording(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "policy_"+str(test_policy)+'.mp4')
     env.load_scaling(save_dir, test_policy)

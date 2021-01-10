@@ -7,8 +7,10 @@
 
 #include <stdlib.h>
 #include <cstdint>
+#include <math.h>
 #include <set>
 #include "../../RaisimGymEnv.hpp"
+
 
 namespace raisim {
 
@@ -99,6 +101,10 @@ class ENVIRONMENT : public RaisimGymEnv {
     goalReward_ = 0.0;
 
     auto loopCount = int(control_dt_ / simulation_dt_ + 1e-10);
+    auto lowest_error = 20.0;
+    auto current_cylinder_height = goalPos_(2) + 
+        (-cylinderHeight_/2 * (1-curriculumFactor_)) + curriculumFactor_ * cylinderHeight_/2;
+    cyilinder_->setPosition(goalPos_(0),goalPos_(1), current_cylinder_height);
 
     for(howManySteps_ = 0; howManySteps_ < loopCount; howManySteps_++){
       if(server_) server_->lockVisualizationServerMutex();
@@ -106,19 +112,49 @@ class ENVIRONMENT : public RaisimGymEnv {
       if(server_) server_->unlockVisualizationServerMutex();
       updateObservation();
 
-      torqueReward_ += torqueRewardCoeff_ * anymal_->getGeneralizedForce().squaredNorm() * getSimulationTimeStep();
-      if(posError_.head(2).norm() < 0.05)
-        goalReward_ += goalPosRewardCoeff_;
+      if(maxJointVel_ < gv_.tail(12).cwiseAbs().maxCoeff())
+        maxJointVel_ = gv_.tail(12).cwiseAbs().maxCoeff();
+      std::cout<< maxJointVel_ <<std::endl;
 
-      /// if you want, you can add reward function
-      /*************************code************************
-       *                                                   *
-       *                                                   *
-       *                                                   *
-       *                                                   *
-       *****************************************************/
+      torqueReward_ += torqueRewardCoeff_ * anymal_->getGeneralizedForce().squaredNorm() * getSimulationTimeStep();
+
+      auto xy_error = posError_.head(2).norm();
+
+      // to calculate if the robot heads to the target point, if so theta should be closed to 0
+      auto xy_error_unit_vec = posError_.head(2) / xy_error;
+      auto body_vel_unit_vec = bodyLinearVel_.head(2) / bodyLinearVel_.head(2).norm();
+      auto theta = acos(xy_error_unit_vec.dot(body_vel_unit_vec)) * 180.f / M_PI; 
+
+      if(xy_error < 1.00)
+        goalReward_ += goalPosRewardCoeff_ / xy_error + gc_(2);
+      
+      /// if you want, you can add rewards
+      if ((xy_error < lowest_error) && bodyLinearVel_.norm() > 0 && theta < 10)
+        goalReward_ += goalPosRewardCoeff_ * (1 - theta/10) / xy_error;
+
+      if (xy_error < lowest_error)
+      {
+        lowest_error = xy_error;
+      }
+      else
+      {
+        goalReward_ -= goalPosRewardCoeff_;
+      }
+
+      auto joint_velocity = gv_.tail(12);
+
+      // for(int i=0; i < 12; i++){
+      //   if (abs(joint_velocity[i]) >= 40)
+      //   {
+      //     // goalReward_ -= goalPosRewardCoeff_ * 2;
+      //     std::cerr << abs(joint_velocity[i]) << std::endl;
+      //   }
+        
+      // } 
     }
     previousAction_ << pTarget12_;
+
+    goalReward_ = std::min(goalReward_, 0.80);
     return float(torqueReward_ + goalReward_)/float(howManySteps_);
   }
 
@@ -177,13 +213,40 @@ class ENVIRONMENT : public RaisimGymEnv {
         return true;
     ///***********************example*********************
 
+    auto xy_error = posError_.head(2).norm();
+
+    if (xy_error > 4.20)  // Went too far
+    {
+      terminalReward = -0.1;
+      return true;
+    }
+
     /// if you want, you can use another terminal condition
-    /*************************code************************
-     *                                                   *
-     *                                                   *
-     *                                                   *
-     *                                                   *
-     *****************************************************/
+    // auto current_cylinder_height = goalPos_(2) + 
+        // (-cylinderHeight_/2 * (1-curriculumFactor_)) + curriculumFactor_ * cylinderHeight_/2 + cylinderHeight_/2;
+    // if (xy_error < 0.40 + 0.40 * (1.0 - curriculumFactor_))
+    // {
+    //   // if (gc_(2) > current_cylinder_height + 0.2 * curriculumFactor_)
+    //   // {
+    //   //   terminalReward = 100.f;
+    //   // }else
+    //   // {
+    //   //   terminalReward = 10.f;
+    //   // }
+    //   terminalReward = 100.f;
+    //   return true;
+    // }
+
+    auto joint_velocity = gv_.tail(12);
+    for(int i=0; i < 12; i++){
+      if (abs(joint_velocity[i]) >= 40 + 40 * (0.98-curriculumFactor_))
+      {
+        terminalReward = -1.f;
+        return true;
+      }
+      
+      } 
+
     terminalReward = 0.f;
     return false;
   }
@@ -201,7 +264,10 @@ class ENVIRONMENT : public RaisimGymEnv {
      *                                                   *
      *                                                   *
      *****************************************************/
-    RSINFO_IF(visualizable_, "Curriculum factor: "<<curriculumFactor_)
+    auto current_cylinder_height = goalPos_(2) + 
+        (-cylinderHeight_/2 * (1-curriculumFactor_)) + curriculumFactor_ * cylinderHeight_/2 + cylinderHeight_/2;
+    RSINFO_IF(visualizable_, "Curriculum factor: "<< curriculumFactor_)
+    RSINFO_IF(visualizable_, "Current height: " << current_cylinder_height)
   }
 
   void getConstraints(Eigen::Ref<EigenVec> constraints){
@@ -228,6 +294,8 @@ class ENVIRONMENT : public RaisimGymEnv {
   Eigen::Vector3d goalPos_, posError_, goalInControlFrame_;
   Eigen::Vector3d baseTogoalDir_;
   double cylinderRadious_, cylinderHeight_ , finalCylinderHeight_;
+
+  double maxJointVel_;
 };
 }
 
