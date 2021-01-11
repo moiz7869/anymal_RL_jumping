@@ -15,6 +15,8 @@ The robot could climb up 1.25491 meters (rank 7th / 38).
 
 [Learning Iteration Video](https://youtu.be/oV66VFc71TQ)
 
+![Learning Progress](report/demo.png)
+
 ## raisim_env_anymal
 
 ### How to use this repo
